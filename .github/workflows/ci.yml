@@ -12,7 +12,7 @@ jobs:
         ubuntu: ["22.04", "24.04"]
     runs-on: ubuntu-${{ matrix.ubuntu }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: >
           sudo apt-get update && sudo apt-get install -y --no-install-recommends
           cmake g++ libcurl4-openssl-dev libsnappy-dev zlib1g-dev
@@ -24,6 +24,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
       - uses: pre-commit/action@v3.0.1
