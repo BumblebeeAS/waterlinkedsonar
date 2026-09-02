@@ -1,0 +1,14 @@
+PROJECT_NAME           = waterlinkedsonar
+PROJECT_BRIEF          = "C++ client library for the Water Linked Sonar 3D-15"
+OUTPUT_DIRECTORY       = build
+INPUT                  = README.md include/waterlinkedsonar
+EXCLUDE                = include/waterlinkedsonar/detail
+RECURSIVE              = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+STRIP_FROM_PATH        = include
+STRIP_FROM_INC_PATH    = include
+JAVADOC_AUTOBRIEF      = YES
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+QUIET                  = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
