@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APT_PACKAGES: >-
+    cmake g++ clang libcurl4-openssl-dev libsnappy-dev zlib1g-dev
+    nlohmann-json3-dev libprotobuf-dev protobuf-compiler libgtest-dev
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+        compiler: [g++, clang++]
+        standard: [17, 20]
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get -o Acquire::Retries=3 update && sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends $APT_PACKAGES
+      - run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
+          -DCMAKE_CXX_FLAGS=-pedantic-errors
+      - run: cmake --build build -j"$(nproc)"
+      - run: ctest --test-dir build --output-on-failure
+      - run: cmake --install build --prefix "$RUNNER_TEMP/install"
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get -o Acquire::Retries=3 update && sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends $APT_PACKAGES
+      - run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+      - run: cmake --build build -j"$(nproc)"
+      - run: ctest --test-dir build --output-on-failure
+
+  tsan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get -o Acquire::Retries=3 update && sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends $APT_PACKAGES
+      - run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_CXX_FLAGS=-fsanitize=thread
+          -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=thread
+          -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=thread
+      - run: cmake --build build -j"$(nproc)"
+      - run: ctest --test-dir build --output-on-failure
+
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get -o Acquire::Retries=3 update && sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends $APT_PACKAGES clang-tidy
+      - run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - run: cmake --build build -j"$(nproc)"
+      - run: git ls-files '*.cpp' | xargs -P"$(nproc)" -n1 clang-tidy -p build --quiet --warnings-as-errors='*'
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+      - uses: pre-commit/action@v3.0.1

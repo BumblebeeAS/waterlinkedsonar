@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a defect in the library
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      placeholder: v0.1.0, or a commit hash
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Sonar firmware version
+      placeholder: "1.8.0"
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: Ubuntu 24.04, GCC 13
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      render: shell
